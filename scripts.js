@@ -27,6 +27,7 @@ constructor({position, image}){
 }
 
 class Player {
+    static speed = 5
 constructor({position, velocity}){
     this.position = position
     this.velocity = velocity
@@ -320,7 +321,7 @@ if(Math.hypot(circle2.position.x - circle1.position.x, circle2.position.y - circ
         return false
 }
 
-function collisionPrediction({cardDirection, speedX, speedY}){
+function playerCollisionPrediction({cardDirection, speedX, speedY}){
     for(let i = 0; i < boundaries.length; i++){
     const boundary = boundaries[i]
     if(
@@ -341,13 +342,13 @@ function collisionPrediction({cardDirection, speedX, speedY}){
 
 function updateVelocity(){
     if(keys.w.pressed && lastKey == "w"){
-        collisionPrediction({cardDirection: "y", speedX: 0, speedY:-5})
+        playerCollisionPrediction({cardDirection: "y", speedX: 0, speedY: -Player.speed})
     }else if(keys.a.pressed && lastKey == "a"){
-        collisionPrediction({cardDirection: "x", speedX: -5, speedY:0})
+        playerCollisionPrediction({cardDirection: "x", speedX: -Player.speed, speedY:0})
     }else if(keys.s.pressed && lastKey == "s"){
-        collisionPrediction({cardDirection: "y", speedX: 0, speedY: 5})
+        playerCollisionPrediction({cardDirection: "y", speedX: 0, speedY: Player.speed})
     }else if(keys.d.pressed && lastKey == "d"){
-        collisionPrediction({cardDirection: "x", speedX: 5, speedY: 0})
+        playerCollisionPrediction({cardDirection: "x", speedX: Player.speed, speedY: 0})
     }
 }
 // collision check function -end
@@ -406,11 +407,6 @@ function animate(){
         player.velocity.y = 0
         }
     })
-
-
-    scoreDisplay.innerHTML = score
-
-    player.update()
 
 //ghost collision logic -begin
     ghosts.forEach(ghost => {
@@ -529,6 +525,10 @@ function animate(){
     }else if(player.velocity.y > 0){
         player.rotation = Math.PI / 2
     }
+    
+    scoreDisplay.innerHTML = score
+    
+    player.update()
 }
 //pacman mouth rotation logic -end
 
