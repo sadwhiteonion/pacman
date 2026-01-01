@@ -64,7 +64,7 @@ update(){
 
 class Ghost {
     static speed = 2
-constructor({position, velocity, color = "red"}){
+constructor({position, velocity, color = "red", image}){
     this.position = position
     this.velocity = velocity
     this.color = color
@@ -72,14 +72,17 @@ constructor({position, velocity, color = "red"}){
     this.prevCollisions = []
     this.speed = 2
     this.scared = false
+    this.image = image
 }
 
 draw(){
     c.beginPath()
     c.arc( this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
-    c.fillStyle = this.scared ? "blue" : this.color
-    c.fill()
+    // c.fillStyle = this.scared ? "blue" : this.color
+    // c.fill()
     c.closePath()
+    
+    c.drawImage(this.scared ? createImage("blueGhost") : this.image, this.position.x - this.radius, this.position.y - this.radius)
 }
 
 update(){
@@ -167,6 +170,12 @@ const player = new Player({
     }
 })
 
+function createImage(src){
+    const image = new Image()
+    image.src = `./assets/${src}.png`
+    return image
+}
+
 const ghosts = [
     new Ghost({
         position:{
@@ -176,7 +185,8 @@ const ghosts = [
         velocity: {
             x: -Ghost.speed,
             y: 0
-        }
+        },
+        image: createImage("redGhost")
     }),
     new Ghost({
         position:{
@@ -187,7 +197,7 @@ const ghosts = [
             x: 0,
             y: -Ghost.speed
         },
-        color: "orange"
+        image: createImage("pinkGhost")
     }),
     new Ghost({
         position:{
@@ -198,20 +208,13 @@ const ghosts = [
             x: 0,
             y: Ghost.speed
         },
-        color: "pink"
+        image: createImage("orangeGhost")
     })
 ]
 
 const boundaries = []
 const pellets = []
 const powerUps =[]
-
-
-function createImage(src){
-    const image = new Image()
-    image.src = `./assets/${src}.png`
-    return image
-}
 
 function addBoundary(column, row, src){
      boundaries.push(new Boundary({
