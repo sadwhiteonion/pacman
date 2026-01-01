@@ -2,9 +2,8 @@
 const canvas = document.getElementById("canvas")
 const c =  canvas.getContext("2d")
 
-canvas.width = window.innerWidth
-canvas.height = window.innerHeight
-
+canvas.width = innerWidth > 600 ? innerWidth : 600
+canvas.height = innerHeight > 600 ? innerHeight : 600
 const scoreDisplay = document.getElementById("score") 
 let score = 0
 // canvas setup - end
@@ -536,7 +535,7 @@ animate()
 //animation loop -end
 
 //eventListener defintions -begin
-window.addEventListener("keydown", ({key}) => {
+addEventListener("keydown", ({key}) => {
     switch(key){
         case "w":
             keys.w.pressed = true
@@ -557,7 +556,7 @@ window.addEventListener("keydown", ({key}) => {
     }
 })
 
-window.addEventListener("keyup", ({key}) => {
+addEventListener("keyup", ({key}) => {
     switch(key){
         case "w":
             keys.w.pressed = false
