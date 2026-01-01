@@ -118,7 +118,6 @@ draw(){
     c.closePath()
 }
 }
-
 // class setup - end
 
 // key begin
@@ -137,9 +136,8 @@ const keys = {
     },
 }
 let lastKey = ""
-
 // keys end
-// map definitio - begin
+// map definition - begin
 let map = [
     ["1", "-", "-", "-", "-", "-", "-", "-", "-", "2"],
     ["|", " ", ".", ".", ".", ".", ".", ".", ".", "|"],
@@ -155,19 +153,20 @@ let map = [
     ["|", ".", ".", ".", "1", "2", ".", ".", "p", "|"],
     ["4", "-", "-", "-", "7","7", "-", "-", "-", "3" ]
 ]
-// map definitio - end
+// map definition - end
 
 // boundaries array mit boundary Objects - begin
+const player = new Player({
+    position: {
+    x: Boundary.width + Boundary.width/ 2,
+    y: Boundary.height + Boundary.height/ 2,
+    },
+    velocity: {
+    x: 0,
+    y: 0
+    }
+})
 
-function createImage(src){
-    const image = new Image()
-    image.src = `./assets/${src}.png`
-    return image
-}
-
-const boundaries = []
-const pellets = []
-const powerUps =[]
 const ghosts = [
     new Ghost({
         position:{
@@ -202,6 +201,17 @@ const ghosts = [
         color: "pink"
     })
 ]
+
+const boundaries = []
+const pellets = []
+const powerUps =[]
+
+
+function createImage(src){
+    const image = new Image()
+    image.src = `./assets/${src}.png`
+    return image
+}
 
 function addBoundary(column, row, src){
      boundaries.push(new Boundary({
@@ -282,22 +292,34 @@ switch(map[i][j]){
 }
     }
 }
-
-
 // boundaries array mit boundary Objects - end
 
-// player object + control  begin
-const player = new Player({
-    position: {
-    x: Boundary.width + Boundary.width/ 2,
-    y: Boundary.height + Boundary.height/ 2,
-    },
-    velocity: {
-    x: 0,
-    y: 0
-    }
-})
-// collisionPrediction function begin
+// collisionPrediction function -end
+
+// collision check function -begin
+function circleCollidesRect({circle, rect}){
+    const padding = Boundary.width/ 2 - circle.radius - 1
+    if(    circle.position.y - circle.radius + circle.velocity.y
+        <= rect.position.y + rect.height + padding      // top collision
+        && circle.position.x + circle.radius + circle.velocity.x
+        >= rect.position.x - padding                    // left collision
+        && circle.position.y + circle.radius + circle.velocity.y
+        >= rect.position.y - padding                    // bottom collision
+        && circle.position.x - circle.radius + circle.velocity.x <=
+        rect.position.x + rect.width + padding          // right collision
+        ){
+      return true
+        }
+    return false
+}
+
+function circleCollideCircle({circle1, circle2}){
+if(Math.hypot(circle2.position.x - circle1.position.x, circle2.position.y - circle1.position.y)  < circle2.radius + circle1.radius  ){
+        return true
+        }
+        return false
+}
+
 function collisionPrediction({cardDirection, speedX, speedY}){
     for(let i = 0; i < boundaries.length; i++){
     const boundary = boundaries[i]
@@ -317,7 +339,6 @@ function collisionPrediction({cardDirection, speedX, speedY}){
         }}
 }
 
-// collisionPrediction function end
 function updateVelocity(){
     if(keys.w.pressed && lastKey == "w"){
         collisionPrediction({cardDirection: "y", speedX: 0, speedY:-5})
@@ -329,27 +350,9 @@ function updateVelocity(){
         collisionPrediction({cardDirection: "x", speedX: 5, speedY: 0})
     }
 }
-// player object + control  end
+// collision check function -end
 
-// collision check functions begin
-function circleCollidesRect({circle, rect}){
-    const padding = Boundary.width/ 2 - circle.radius - 1
-    if(    circle.position.y - circle.radius + circle.velocity.y
-        <= rect.position.y + rect.height + padding      // top collision
-        && circle.position.x + circle.radius + circle.velocity.x
-        >= rect.position.x - padding                    // left collision
-        && circle.position.y + circle.radius + circle.velocity.y
-        >= rect.position.y - padding           // bottom collision
-        && circle.position.x - circle.radius + circle.velocity.x <=
-        rect.position.x + rect.width + padding       // right collision
-        ){
-      return true
-        }
-    return false
-}
-// collision check functions end
-
-//animate function begin
+//animation loop -begin
 let animationId
 
 function animate(){
@@ -362,15 +365,19 @@ function animate(){
         const pellet = pellets[i]
         pellet.draw()
         
-        if(Math.hypot(pellet.position.x - player.position.x, pellet.position.y - player.position.y)  < pellet.radius + player.radius  ){
+        if(circleCollideCircle({circle1: player, circle2: pellet})){
         pellets.splice(i,1)
         score += 10
         }
     }
    
+    if(pellets.length === 0){
+        console.log("You win!")
+        cancelAnimationFrame(animationId)
+    }
+
     ghosts.forEach((ghost, i) => {
-        if(Math.hypot(  ghost.position.x - player.position.x,
-                        ghost.position.y - player.position.y) < ghost.radius + player.radius  ){
+         if(circleCollideCircle({circle1: player, circle2: ghost})){
             if(ghost.scared){
             ghosts.splice(i,1)
             }else{
@@ -378,14 +385,9 @@ function animate(){
             }           
         }})
 
-    if(pellets.length === 0){
-        console.log("You win!")
-        cancelAnimationFrame(animationId)
-    }
-
     powerUps.forEach((powerUp, i) => {
         powerUp.draw()
-        if(Math.hypot(powerUp.position.x - player.position.x, powerUp.position.y - player.position.y)  < powerUp.radius + player.radius  ){
+        if(circleCollideCircle({circle1: player, circle2: powerUp})){
         powerUps.splice(i,1)
 
         ghosts.forEach( ghost => {
@@ -398,7 +400,7 @@ function animate(){
 
     boundaries.forEach(boundary => {
         boundary.draw()
-        if( circleCollidesRect({circle: player, rect: boundary})
+        if(circleCollidesRect({circle: player, rect: boundary})
         ){
         player.velocity.x = 0
         player.velocity.y = 0
@@ -410,6 +412,7 @@ function animate(){
 
     player.update()
 
+//ghost collision logic -begin
     ghosts.forEach(ghost => {
         ghost.update()
 
@@ -470,7 +473,7 @@ function animate(){
 
         })
 
-        if(collisions.length > ghost.prevCollisions.length){ // Hier < oder >
+        if(collisions.length > ghost.prevCollisions.length){ 
               ghost.prevCollisions = collisions
         }
   
@@ -514,7 +517,9 @@ function animate(){
             ghost.prevCollisions = []
         }
     })
-   
+//ghost collision logic -end
+
+//pacman mouth rotation logic -begin
     if(player.velocity.x > 0){
         player.rotation = 0
     }else if(player.velocity.x < 0){
@@ -525,11 +530,12 @@ function animate(){
         player.rotation = Math.PI / 2
     }
 }
+//pacman mouth rotation logic -end
 
 animate()
-//animate function end
+//animation loop -end
 
-// EventListener begin
+//eventListener defintions -begin
 window.addEventListener("keydown", ({key}) => {
     switch(key){
         case "w":
@@ -567,4 +573,4 @@ window.addEventListener("keyup", ({key}) => {
             break
     }
 })
-// EventListener end
+//eventListener defintions -end
