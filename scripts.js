@@ -4,8 +4,11 @@ const c =  canvas.getContext("2d")
 
 canvas.width = innerWidth > 600 ? innerWidth : 600
 canvas.height = innerHeight > 600 ? innerHeight : 600
+
 const scoreDisplay = document.getElementById("score") 
 let score = 0
+
+const endScreen = document.getElementById("endScreen")
 // canvas setup - end
 
 // class setup - begin
@@ -140,6 +143,7 @@ const keys = {
 }
 let lastKey = ""
 // keys end
+
 // map definition - begin
 let map = [
     ["1", "-", "-", "-", "-", "-", "-", "-", "-", "2"],
@@ -297,8 +301,6 @@ switch(map[i][j]){
 }
 // boundaries array mit boundary Objects - end
 
-// collisionPrediction function -end
-
 // collision check function -begin
 function circleCollidesRect({circle, rect}){
     const padding = Boundary.width/ 2 - circle.radius - 1
@@ -375,8 +377,8 @@ function animate(){
     }
    
     if(pellets.length === 0){
-        console.log("You win!")
         cancelAnimationFrame(animationId)
+        endScreen.innerHTML = "YOU WIN"
     }
 
     ghosts.forEach((ghost, i) => {
@@ -385,6 +387,7 @@ function animate(){
             ghosts.splice(i,1)
             }else{
             cancelAnimationFrame(animationId)
+            endScreen.innerHTML = "YOU LOSE"
             }           
         }})
 

@@ -8,6 +8,17 @@
             font-family: sans-serif;
             font-size: 2em;
         }
+
+        #endScreen{
+            position: fixed;
+             top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            font-family: sans-serif;
+            font-size: 4em;
+            font-weight: bold;
+        }
     </style>
     <title>Document</title>
 </head>
@@ -15,6 +26,7 @@
     <div><h2>PacMan CodeGrind Project</h2> <span>Score: </span> <span id="score">0</span></div>
     <hr style="color: white;">
     <canvas id="canvas"></canvas>
+    <div id="endScreen"></div>
 </body>
     <script src="scripts.js"></script>
 </html>
