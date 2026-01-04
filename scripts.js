@@ -183,11 +183,11 @@ function createImage(src){
 const ghosts = [
     new Ghost({
         position:{
-            x: Boundary.width * 8 + Boundary.width/ 2,
+            x: Boundary.width * 2 + Boundary.width/ 2,
             y: Boundary.height + Boundary.height/ 2,
         },
         velocity: {
-            x: -Ghost.speed,
+            x: 0,
             y: 0
         },
         image: createImage("redGhost")
@@ -358,6 +358,87 @@ function updateVelocity(){
 // collision check function -end
 
 //animation loop -begin
+function isCenteredOnTile(entity) {
+  // tile size 40, center offset 20
+  return (
+    entity.position.x % Boundary.width === Boundary.width / 2 &&
+    entity.position.y % Boundary.height === Boundary.height / 2
+  )
+}
+
+function getOpenDirectionsForGhost(ghost) {
+  const open = []
+
+  const tests = [
+    { dir: "up",    vx: 0,           vy: -ghost.speed },
+    { dir: "down",  vx: 0,           vy:  ghost.speed },
+    { dir: "left",  vx: -ghost.speed, vy: 0 },
+    { dir: "right", vx:  ghost.speed, vy: 0 },
+  ]
+
+  for (const t of tests) {
+    let blocked = false
+    for (let i = 0; i < boundaries.length; i++) {
+      const boundary = boundaries[i]
+      if (
+        circleCollidesRect({
+          circle: {
+            ...ghost,
+            velocity: { x: t.vx, y: t.vy }
+          },
+          rect: boundary
+        })
+      ) {
+        blocked = true
+        break
+      }
+    }
+    if (!blocked) open.push(t.dir)
+  }
+
+  return open
+}
+
+function currentDirection(ghost) {
+  if (ghost.velocity.x > 0) return "right"
+  if (ghost.velocity.x < 0) return "left"
+  if (ghost.velocity.y > 0) return "down"
+  if (ghost.velocity.y < 0) return "up"
+  return null
+}
+
+function oppositeDirection(dir) {
+  switch (dir) {
+    case "up": return "down"
+    case "down": return "up"
+    case "left": return "right"
+    case "right": return "left"
+    default: return null
+  }
+}
+
+function setGhostDirection(ghost, dir) {
+  switch (dir) {
+    case "up":
+      ghost.velocity.x = 0
+      ghost.velocity.y = -ghost.speed
+      break
+    case "down":
+      ghost.velocity.x = 0
+      ghost.velocity.y = ghost.speed
+      break
+    case "left":
+      ghost.velocity.x = -ghost.speed
+      ghost.velocity.y = 0
+      break
+    case "right":
+      ghost.velocity.x = ghost.speed
+      ghost.velocity.y = 0
+      break
+  }
+}
+
+
 let animationId
 
 function animate(){
@@ -414,111 +495,35 @@ function animate(){
     })
 
 //ghost collision logic -begin
-    ghosts.forEach(ghost => {
-        ghost.update()
+ghosts.forEach(ghost => {
 
-        const collisions = []
-        boundaries.forEach(boundary => {
-            
-            if( !collisions.includes("up") &&
-            circleCollidesRect({
-                circle: {...ghost,
-                    velocity: {
-                    x: 0,
-                    y: -ghost.speed
-                }},
-                rect: boundary
-            })
-        ){ 
-            collisions.push("up")
-        }
+  // Nur entscheiden, wenn der Ghost exakt im Tile-Center sitzt
+  if (isCenteredOnTile(ghost)) {
+    const openDirs = getOpenDirectionsForGhost(ghost)
 
-            if( !collisions.includes("left") &&
-            circleCollidesRect({
-                circle: {...ghost,
-                    velocity: {
-                    x: -ghost.speed,
-                    y: 0
-                }},
-                rect: boundary
-            })
-        ){ 
-            collisions.push("left")
-        }
+    // Falls aus irgendeinem Grund nix offen ist: einfach stehenbleiben
+    if (openDirs.length === 0) {
+      ghost.velocity.x = 0
+      ghost.velocity.y = 0
+    } else {
+      const cur = currentDirection(ghost)
+      const opp = oppositeDirection(cur)
 
-            if( !collisions.includes("right") &&
-            circleCollidesRect({
-                circle: {...ghost,
-                    velocity: {
-                    x: ghost.speed,
-                    y: 0
-                }},
-                rect: boundary
-            })
-        ){ 
-            collisions.push("right")
-        }
+      // Nicht direkt umdrehen, außer Sackgasse (dann bleibt nur opp übrig)
+      let choices = openDirs.filter(d => d !== opp)
 
-            if( !collisions.includes("down") &&
-            circleCollidesRect({
-                circle: {...ghost,
-                    velocity: {
-                    x: 0,
-                    y: ghost.speed
-                }},
-                rect: boundary
-            })
-        ){ 
-            collisions.push("down")
-        }
+      if (choices.length === 0) choices = openDirs // Sackgasse -> muss zurück
 
-        })
+      const next = choices[Math.floor(Math.random() * choices.length)]
+      setGhostDirection(ghost, next)
+    }
+  }
 
-        if(collisions.length > ghost.prevCollisions.length){ 
-              ghost.prevCollisions = collisions
-        }
-  
-        if( JSON.stringify(collisions) !== JSON.stringify(ghost.prevCollisions)){
-            if(ghost.velocity.x > 0){
-                ghost.prevCollisions.push("right")
-            }else if(ghost.velocity.x < 0){
-                ghost.prevCollisions.push("left")
-            }else if(ghost.velocity.y < 0){
-                ghost.prevCollisions.push("up")
-            }else if(ghost.velocity.y > 0){
-                ghost.prevCollisions.push("down")
-            }
-            
-            const pathways = ghost.prevCollisions.filter( collision =>
-            {
-                return !collisions.includes(collision)
-            })
-            
-            const direction = pathways[Math.floor(Math.random() * pathways.length)]
-            
-
-            switch(direction){
-                case "up":
-                    ghost.velocity.y = -ghost.speed
-                    ghost.velocity.x = 0
-                break
-                case "down":
-                    ghost.velocity.y = ghost.speed
-                    ghost.velocity.x = 0
-                break
-                case "left":
-                    ghost.velocity.y = 0
-                    ghost.velocity.x = -ghost.speed
-                break
-                case "right":
-                    ghost.velocity.y = 0
-                    ghost.velocity.x = ghost.speed
-                break
-            }
-            ghost.prevCollisions = []
-        }
-    })
+  // Bewegung danach (wichtig!)
+  ghost.update()
+})
 //ghost collision logic -end
+
 
 //pacman mouth rotation logic -begin
     if(player.velocity.x > 0){
