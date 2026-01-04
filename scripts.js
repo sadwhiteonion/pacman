@@ -72,7 +72,6 @@ constructor({position, velocity, color = "red", image}){
     this.velocity = velocity
     this.color = color
     this.radius = 16
-    this.prevCollisions = []
     this.speed = 2
     this.scared = false
     this.image = image
@@ -146,19 +145,19 @@ let lastKey = ""
 
 // map definition - begin
 let map = [
-    ["1", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "2"],
-    ["|", " ", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "|"],
-    ["|", ".", "1", "]", ".", "[", "2", ".", "1", "-", "-", "-", "2", ".", "^", ".", "[", "-", "]", ".", "^", ".", "^", ".", "^", ".", "^", ".", "^", ".", "|"],
-    ["|", ".", "|", ".", ".", ".", "|", ".", "|", ".", ".", ".", "|", ".", "|", ".", ".", ".", ".", ".", "|", ".", "|", ".", "|", ".", "|", ".", "|", ".", "|"],
-    ["|", ".", "|", ".", "^", ".", "|", ".", "|", ".", "#", ".", "v", ".", "|", ".", "[", "-", "]", ".", "|", ".", "|", ".", "|", ".", "|", ".", "|", ".", "|"],
-    ["|", ".", "|", ".", "|", ".", "|", ".", "|", ".", ".", ".", ".", ".", "|", ".", ".", ".", ".", ".", "|", ".", "|", ".", "|", ".", "|", ".", "|", ".", "|"],
-    ["|", ".", "|", ".", "|", ".", "|", ".", "4", "-", "-", "-", "2", ".", "|", ".", "[", "-", "]", ".", "|", ".", "|", ".", "|", ".", "|", ".", "|", ".", "|"],
-    ["|", ".", "|", ".", "|", ".", "|", ".", ".", ".", ".", ".", "|", ".", "|", ".", ".", ".", ".", ".", "|", ".", "|", ".", "|", ".", "|", ".", "|", ".", "|"],
-    ["|", ".", "|", ".", "v", ".", "|", ".", "^", ".", "#", ".", "|", ".", "|", ".", "[", "-", "]", ".", "|", ".", "v", ".", "|", ".", "v", ".", "|", ".", "|"],
-    ["|", ".", "|", ".", ".", ".", "|", ".", "|", ".", ".", ".", "|", ".", "|", ".", ".", ".", ".", ".", "|", ".", ".", ".", "|", ".", ".", ".", "|", ".", "|"],
-    ["|", ".", "4", "]", ".", "[", "3", ".", "4", "-", "-", "-", "3", ".", "4", "-", "-", "-", "]", ".", "4", "-", "-", "-", "7", "-", "-", "-", "3", ".", "|"],
-    ["|", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "|"],
-    ["4", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "3"]
+    ["1", "-", "-", "-", "-", "-", "-", "-", "-", "2"],
+    ["|", " ", ".", ".", "#", ".", ".", ".", ".", "|"],
+    ["|", ".", "^", ".", "[", "]", "#", "^", ".", "|"],
+    ["|", ".", "|", ".", ".", ".", ".", "v", ".", "|"],
+    ["|", "#", "|", ".", "1", "2", ".", ".", ".", "|"],
+    ["|", ".", "v", ".", "4", "3", ".", "^", ".", "|"],
+    ["|", ".", ".", ".", ".", ".", ".", "|", ".", "|"],
+    ["|", ".", "#", ".", "[", "]", ".", "v", ".", "|"],
+    ["|", ".", ".", ".", ".", ".", ".", ".", ".", "|"],
+    ["|", ".", "1", "-", "-", "-", "-", "2", ".", "|"],
+    ["|", ".", "v", ".", "#", ".", ".", "v", ".", "|"],
+    ["|", ".", ".", ".", "1", "2", ".", ".", "p", "|"],
+    ["4", "-", "-", "-", "7","7", "-", "-", "-", "3" ]
 ]
 // map definition - end
 
@@ -355,9 +354,10 @@ function updateVelocity(){
         playerCollisionPrediction({cardDirection: "x", speedX: Player.speed, speedY: 0})
     }
 }
-// collision check function -end
 
-//animation loop -begin
+//helper function for ghost collision -begin
+
+//returns a boolean whether a ghost is aligned with the grid, whenever a ghost is aligned with the grid, the collision check is made
 function isCenteredOnTile(entity) {
   // tile size 40, center offset 20
   return (
@@ -366,9 +366,13 @@ function isCenteredOnTile(entity) {
   )
 }
 
+//the better approach fro collision detection
 function getOpenDirectionsForGhost(ghost) {
+//this array will be returned with all possible movement options
   const open = []
 
+//these test will  be looped trough wiht the circleCollidesRect function, basically using prediction
+//too see what paths are blocked
   const tests = [
     { dir: "up",    vx: 0,           vy: -ghost.speed },
     { dir: "down",  vx: 0,           vy:  ghost.speed },
@@ -376,24 +380,28 @@ function getOpenDirectionsForGhost(ghost) {
     { dir: "right", vx:  ghost.speed, vy: 0 },
   ]
 
-  for (const t of tests) {
+  for (let i = 0; i < tests.length; i++) {
+    const test = tests[i]
     let blocked = false
-    for (let i = 0; i < boundaries.length; i++) {
-      const boundary = boundaries[i]
+    //each test loops through all boundaries seeing if they collide, first upwards, then down etc
+    for (let j = 0; j < boundaries.length; j++) {
+      const boundary = boundaries[j]
       if (
         circleCollidesRect({
           circle: {
             ...ghost,
-            velocity: { x: t.vx, y: t.vy }
+            velocity    : { x: test.vx, y: test.vy }
           },
           rect: boundary
         })
       ) {
+        //incase the dirction is blocked the loop ends
         blocked = true
         break
       }
     }
-    if (!blocked) open.push(t.dir)
+    //if the direction is not blocked the direction will be pushed into the open array
+    if (!blocked) open.push(test.dir)
   }
 
   return open
@@ -437,7 +445,10 @@ function setGhostDirection(ghost, dir) {
       break
   }
 }
+//helper function for ghost collision -begin
+// collision check function -end
 
+//animation loop -begin
 
 let animationId
 
@@ -494,32 +505,35 @@ function animate(){
         }
     })
 
-//ghost collision logic -begin
+//ghost collision logic -begin GPT assissted :(, habs net hinbekommen, deadend collision zu fixen
 ghosts.forEach(ghost => {
 
-  // Nur entscheiden, wenn der Ghost exakt im Tile-Center sitzt
+// only fires when on tile center
   if (isCenteredOnTile(ghost)) {
     const openDirs = getOpenDirectionsForGhost(ghost)
 
-    // Falls aus irgendeinem Grund nix offen ist: einfach stehenbleiben
+// prevents going into boundaries incase every direction is blocked
     if (openDirs.length === 0) {
       ghost.velocity.x = 0
       ghost.velocity.y = 0
     } else {
-      const cur = currentDirection(ghost)
-      const opp = oppositeDirection(cur)
+      const current = currentDirection(ghost)
+      const opposite = oppositeDirection(current)
 
-      // Nicht direkt umdrehen, außer Sackgasse (dann bleibt nur opp übrig)
-      let choices = openDirs.filter(d => d !== opp)
+// choices should usually never include just turning around
+      let choices = openDirs.filter(direction => direction !== opposite)
 
-      if (choices.length === 0) choices = openDirs // Sackgasse -> muss zurück
+// unless there is no other choice, openDirs sould only include the opposite direction
+// in theory this could also be set to [opposite], I think?
+      if (choices.length === 0){
+        choices = openDirs
+        } 
 
       const next = choices[Math.floor(Math.random() * choices.length)]
       setGhostDirection(ghost, next)
     }
   }
-
-  // Bewegung danach (wichtig!)
+// only at the end movement is updated, after collision has been checked
   ghost.update()
 })
 //ghost collision logic -end
